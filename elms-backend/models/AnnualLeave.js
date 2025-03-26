@@ -1,0 +1,48 @@
+const mongoose = require("mongoose");
+
+const AnnualLeaveSchema = new mongoose.Schema({
+  employeeId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  leaveType: { type: String, default: "Annual Leave", required: true },
+  status: { 
+    type: String, 
+    enum: ["Pending", "RecommendedBySectional", "RecommendedByDepartmental", "Approved", "Rejected"], 
+    default: "Pending"
+  },
+  createdAt: { type: Date, default: Date.now },
+  submissionDate: { type: Date, default: Date.now },
+  employeeName: { type: String, required: true },
+  personNumber: { type: String, required: true },
+  department: { type: String, required: true },
+  sector: { type: String },
+  daysApplied: { type: Number, required: true },
+  startDate: { type: Date, required: true },
+  endDate: { type: Date, required: true },
+  addressWhileAway: { type: String },
+  emailAddress: { type: String },
+  phoneNumber: { type: String },
+  reason: { type: String, required: true },
+  leaveBalanceBF: { type: Number, default: 0 },
+  currentYearLeave: { type: Number, default: 0 },
+  totalLeaveDays: { type: Number },
+  leaveTakenThisYear: { type: Number, default: 0 },
+  leaveBalanceDue: { type: Number },
+  leaveApplied: { type: Number, required: true },
+  leaveBalanceCF: { type: Number },
+  computedBy: { type: String },
+  computedDate: { type: Date },
+  sectionalHeadName: { type: String, required: true },
+  departmentalHeadName: { type: String, required: true },
+  departmentalHeadDaysGranted: Number,
+  departmentalHeadStartDate: Date,
+  departmentalHeadLastDate: Date,
+  departmentalHeadResumeDate: Date,
+  HRDirectorName: { type: String, required: true},
+  approvals: [{
+    approverId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    approverRole: { type: String, enum: ["Sectional Head", "Departmental Head", "HR Director"] },
+    status: { type: String, enum: ["Pending", "Approved", "Rejected"], default: "Pending" },
+    comment: { type: String },
+    updatedAt: { type: Date, default: Date.now },
+  }],
+});
+module.exports = mongoose.model("AnnualLeave", AnnualLeaveSchema);

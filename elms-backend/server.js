@@ -4,6 +4,7 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 const http = require("http");
 const { Server } = require("socket.io");
+const path = require("path");
 
 const app = express(); // ✅ Define `app` before using it
 const server = http.createServer(app); // ✅ Now `app` is available
@@ -15,17 +16,32 @@ const io = new Server(server, {
   },
 });
 
+
 // Middleware
 app.use(express.json());
 app.use(cors());
 
+
+app.get('/api/leaves', (req, res) => {
+  res.json({ message: 'Leave requests', data: [] });
+});
+
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
 // Import routes
 const leaveRoutes = require("./routes/leaveRoutes");
 const authRoutes = require("./routes/authRoutes");
-
+const profileRoutes = require("./routes/profileRoutes");
+const leaveBalanceRoutes = require("./routes/leaveBalanceRoutes");
+const adminRoutes = require("./routes/adminRoutes");
 // Use routes
+app.use("/api/admin", adminRoutes);
+app.use("/api/leaves/admin", adminRoutes);
 app.use("/api/leaves", leaveRoutes);
 app.use("/api/auth", authRoutes);
+app.use("/api/profiles", profileRoutes);
+app.use("/api/leave-balances", leaveBalanceRoutes);
+
 
 // WebSocket logic
 io.on("connection", (socket) => {

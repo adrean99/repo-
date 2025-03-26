@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_URL = "http://localhost:5000/api/auth";  // Backend URL
+const API_URL = process.env.REACT_APP_API_URL + "/auth";  // Dynamic API URL
 
 export const registerUser = async (userData) => {
   return await axios.post(`${API_URL}/register`, userData);

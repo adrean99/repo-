@@ -1,34 +1,46 @@
 const jwt = require("jsonwebtoken");
 
-// Middleware to verify JWT token
 function verifyToken(req, res, next) {
-  const token = req.header("Authorization");
+  const authHeader = req.header("Authorization");
+  console.log("🔍 Token received:", authHeader);
+
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    console.log("No valid Bearer token provided");
+    return res.status(401).json({ msg: "No token, authorization denied" });
+  }
+
+  const token = authHeader.split(" ")[1];
   if (!token) {
+    console.log("Token missing after Bearer");
     return res.status(401).json({ msg: "No token, authorization denied" });
   }
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded.user;
+    console.log("Decoded token:", decoded);
+    req.user = decoded.user || decoded; // Handle flat payload
+    console.log("Set req.user:", req.user);
+    if (!req.user.id) {
+      console.log("Token lacks id field:", decoded);
+      return res.status(401).json({ msg: "Token lacks user ID" });
+    }
     next();
   } catch (err) {
-    res.status(401).json({ msg: "Token is not valid" });
+    console.error("❌ Token verification failed:", err.message);
+    return res.status(401).json({ msg: "Token is not valid" });
   }
 }
 
-// Middleware for role-based access
-function checkRole(requiredRoles) {
-  return (req, res, next) => {
-    if (!req.user || !requiredRoles.includes(req.user.role)) {
-      return res.status(403).json({ msg: "Access Denied" });
-    }
-    next();
-  };
-}
+const hasRole = (roles) => (req, res, next) => {
+  if (!req.user || !roles.includes(req.user.role)) {
+    return res.status(403).json({ error: `Access restricted to roles: ${roles.join(", ")}` });
+  }
+  next();
+};
 
-// Define role-based middleware functions
-const isManager = checkRole(["Manager", "Admin"]);
-const isAdmin = checkRole(["Admin"]);
+const isAdmin = hasRole(["Admin"]);
+const isSectionalHead = hasRole(["SectionalHead"]);
+const isDepartmentalHead =hasRole(["DepartmentalHead"]);
+const isHRDirector = hasRole(["HRDirector"]);
 
-// ✅ Export all functions
-module.exports = { verifyToken, isManager, isAdmin };
+module.exports = { verifyToken, hasRole, isAdmin, isSectionalHead,  isDepartmentalHead, isHRDirector };

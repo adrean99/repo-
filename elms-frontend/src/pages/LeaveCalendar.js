@@ -17,16 +17,32 @@ const LeaveCalendar = () => {
     fetch("http://localhost:5000/api/leaves/approved", {
       headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
     })
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error("Failed to fetch data");
+        }
+        return res.json();
+      })
       .then((data) => {
-        // Convert leave data to calendar format
-        const formattedEvents = data.map((leave) => ({
-          title: `${leave.employeeId?.name} - Leave`,
-          start: new Date(leave.startDate),
-          end: new Date(leave.endDate),
-          allDay: true,
-        }));
-        setEvents(formattedEvents);
+        console.log("Fetched data:", data);  // Log the data to check its structure
+
+        // Check if the data is an array or if it contains an array (e.g., data.leaves)
+        const leaves = Array.isArray(data) ? data : data.leaves || [];
+
+        if (leaves.length > 0) {
+          const formattedEvents = leaves.map((leave) => ({
+            title: `${leave.employeeId?.name} - Leave`,
+            start: new Date(leave.startDate),
+            end: new Date(leave.endDate),
+            allDay: true,
+          }));
+          setEvents(formattedEvents);
+        } else {
+          console.error("No valid leave data found.");
+        }
+      })
+      .catch((error) => {
+        console.error("Error fetching leave data:", error);
       });
   }, []);
 

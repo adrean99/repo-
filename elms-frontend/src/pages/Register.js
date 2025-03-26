@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { TextField, Button, Typography, Container, Paper } from "@mui/material";
+import { TextField, Button, Typography, Container, Paper, Select, MenuItem } from "@mui/material";
 
 const Register = () => {
-  const [userData, setUserData] = useState({ name: "", email: "", password: "" });
+  const [userData, setUserData] = useState({ name: "", email: "", password: "", role: "Employee" });
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
@@ -62,6 +62,16 @@ const Register = () => {
             margin="normal"
             required
           />
+
+          <Select fullWidth name="role" value={userData.role} onChange={handleChange} sx={{ marginTop: 2 }}>
+            <MenuItem value="Employee">Employee</MenuItem>
+            <MenuItem value="Admin">Admin</MenuItem>
+            <MenuItem value="SectionalHead">SectionalHead</MenuItem>
+            <MenuItem value="DepartmentalHead">DepartmentalHead</MenuItem>
+            <MenuItem value="HRDirector">HRDirector</MenuItem>
+
+          </Select>
+
           <Button type="submit" variant="contained" color="primary" fullWidth sx={{ marginTop: 2 }}>
             Register
           </Button>

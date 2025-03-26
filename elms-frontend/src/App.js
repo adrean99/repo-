@@ -4,37 +4,82 @@ import { AuthProvider, AuthContext } from "./context/AuthContext";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
-import Home from  "./pages/Home";
+import EmployeeDashboard from "./pages/EmployeeDashboard";
+import ManagerDashboard from "./pages/ManagerDashboard";
+//import Home from "./pages/Home";
 import NotFound from "./pages/NotFound";
 import LeaveCalendar from "./pages/LeaveCalendar";
+import ApplyLeave from "./pages/ApplyLeave";
+import Profile from "./pages/Profile";
+import ShortLeave from "./components/ShortLeave";
+import AnnualLeave from "./components/AnnualLeave";
+import AdminDashboard from "./pages/AdminDashboard";
+import { Typography } from "@mui/material";
+
+//import PrivateRoute from "./utils/PrivateRoute";
 
 const PrivateRoute = ({ children, allowedRoles }) => {
-  const { user } = useContext(AuthContext);
-  if (!user || !allowedRoles.includes(user.role)) {
+  const { user, token } = useContext(AuthContext);
+  
+  const localToken = localStorage.getItem("token");
+  const localUser = JSON.parse(localStorage.getItem("user") || "null");
+
+  console.log("PrivateRoute rendering - Context User:", user, "Context Token:", token);
+  console.log("PrivateRoute - LocalStorage User:", localUser, "LocalStorage Token:", localToken);
+
+  // Use context if available, otherwise fall back to localStorage
+  const effectiveToken = token || localToken;
+  const effectiveUser = user || localUser;
+
+  if (effectiveUser === undefined || effectiveToken === undefined) {
+    console.log("PrivateRoute: Auth state not yet loaded (undefined), waiting...");
+    return <Typography>Loading dashboard...</Typography>;
+  }
+
+  if (!effectiveUser || !effectiveToken) {
+    console.log("PrivateRoute: No user or token, redirecting to /login");
     return <Navigate to="/login" />;
   }
+
+  if (!allowedRoles.includes(effectiveUser.role)) {
+    console.log(`PrivateRoute: Role ${effectiveUser.role} not allowed, redirecting to /dashboard`);
+    return <Navigate to="/dashboard" />;
+  }
+
+  console.log("PrivateRoute: Access granted to", allowedRoles);
   return children;
 };
-
 function App() {
+  console.log("App rendering");
   return (
     <AuthProvider>
       <Router>
         <Routes>
-          <Route path="/leave-calendar" element={<LeaveCalendar />} />
-          <Route path="/" element={<Home />} />
-          <Route path="/" element={<NotFound />} />
+          {/* Public Routes */}
+          <Route path="/" element={<Login />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/dashboard" element={<PrivateRoute allowedRoles={["Employee", "Manager", "Admin"]}><Dashboard /></PrivateRoute>} />
+
+          {/* Private Routes */}
+          <Route path="/dashboard" element={<PrivateRoute allowedRoles={["Employee", "Manager", "SectionalHead", "DepartmentalHead", "HRDirector", "Admin"]}><Dashboard /></PrivateRoute>} />
+          <Route path="/employee-dashboard" element={<PrivateRoute allowedRoles={["Employee"]}><EmployeeDashboard /></PrivateRoute>} />
+          <Route path="/manager-dashboard" element={<PrivateRoute allowedRoles={["Manager", "Admin"]}><ManagerDashboard /></PrivateRoute>} />
+          <Route path="/profile" element={<PrivateRoute allowedRoles={["Employee", "Admin", "SectionalHead", "DepartmentalHead", "HRDirector"]}><Profile /></PrivateRoute>} />
+          <Route path="/admin-dashboard" element={<PrivateRoute allowedRoles={["Admin", "SectionalHead", "DepartmentalHead", "HRDirector"]}><AdminDashboard /></PrivateRoute>} />
+          {/* Leave Calendar (Assumed Accessible to All) */}
+          <Route path="/leave-calendar" element={<LeaveCalendar />} />
+          <Route path="/apply-leave" element={<ApplyLeave />} />
+          <Route path="/apply-leave/short" element={<ShortLeave />} />
+          <Route path="/apply-leave/annual" element={<AnnualLeave />} />
+          
+          
+
+          {/* 404 Not Found Route */}
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </Router>
     </AuthProvider>
   );
 }
 
-
 export default App;
-
-
-
