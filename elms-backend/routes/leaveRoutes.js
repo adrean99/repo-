@@ -119,9 +119,9 @@ router.post("/apply", verifyToken, async (req, res) => {
       if (!end) {
         return res.status(400).json({ error: "End Date is required for Short Leave" });
       }
-      const diffDays = Math.ceil(Math.abs(end - start) / (1000 * 60 * 60 * 24)) + 1;
-      if (diffDays > 5 || diffDays !== daysApplied) {
-        return res.status(400).json({ error: "Short leave must be 1-5 days and match date range" });
+      const workingDays = countWorkingDays(start, end);
+      if (workingDays > 5 || workingDays !== daysApplied) {
+        return res.status(400).json({ error: `Short leave must be 1-5 working days (${workingDays} calculated) and match days applied` });
       }
 
       console.log("Creating short leave for user:", req.user.id);

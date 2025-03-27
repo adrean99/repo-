@@ -18,11 +18,36 @@ import {
   TableContainer,
   Chip,
   Tooltip,
+  Grid,
+  CircularProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  IconButton,
 } from "@mui/material";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import CancelIcon from "@mui/icons-material/Cancel";
+import InfoIcon from "@mui/icons-material/Info";
 
 const formatDate = (dateString) => {
   const date = new Date(dateString);
   return isNaN(date.getTime()) ? "N/A" : date.toLocaleDateString();
+};
+
+const countWorkingDays = (start, end) => {
+  let count = 0;
+  let current = new Date(start);
+  const holidays = [new Date("2025-01-01")];
+
+  while (current <= end) {
+    const day = current.getUTCDay();
+    if (day !== 0 && day !== 6 && !holidays.some(h => h.toDateString() === current.toDateString())) {
+      count++;
+    }
+    current.setUTCDate(current.getUTCDate() + 1);
+  }
+  return count;
 };
 
 const ShortLeave = () => {
@@ -44,6 +69,9 @@ const ShortLeave = () => {
   const [pendingApprovals, setPendingApprovals] = useState([]);
   const [message, setMessage] = useState({ type: "", text: "" });
   const [isLoading, setIsLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false); // Added for submit button loading state
+  const [dialogOpen, setDialogOpen] = useState(false); // Added for approval confirmation dialog
+  const [dialogData, setDialogData] = useState({ leaveId: "", status: "" }); // Added for dialog data
 
   const localToken = localStorage.getItem("token");
   const localUser = JSON.parse(localStorage.getItem("user") || "null");
@@ -117,14 +145,13 @@ const ShortLeave = () => {
       setMessage({ type: "error", text: "Start date cannot be after end date" });
       return false;
     }
-    const diffTime = Math.abs(end - start);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-    if (diffDays > 5) {
-      setMessage({ type: "error", text: "Short leave cannot exceed 5 days" });
+    const workingDays = countWorkingDays(start, end);
+    if (workingDays > 5) {
+      setMessage({ type: "error", text: "Short leave cannot exceed 5 working days" });
       return false;
     }
-    if (diffDays !== days) {
-      setMessage({ type: "error", text: "Days applied must match the date range" });
+    if (workingDays !== days) {
+      setMessage({ type: "error", text: `Days applied (${days}) must match working days (${workingDays}) excluding weekends and holidays` });
       return false;
     }
     return true;
@@ -139,6 +166,7 @@ const ShortLeave = () => {
     }
     if (!validateForm()) return;
 
+    setSubmitting(true); // Added for loading state
     try {
       const res = await axios.post(
         "http://localhost:5000/api/leaves/apply",
@@ -174,10 +202,18 @@ const ShortLeave = () => {
         logout();
         navigate("/login");
       }
+    } finally {
+      setSubmitting(false); // Added for loading state
     }
   };
 
-  const handleApproval = async (leaveId, status) => {
+  const handleApprovalConfirm = (leaveId, status) => { // Added for confirmation dialog
+    setDialogData({ leaveId, status });
+    setDialogOpen(true);
+  };
+
+  const handleApproval = async () => { // Modified to work with dialog
+    const { leaveId, status } = dialogData;
     try {
       const res = await axios.put(
         `http://localhost:5000/api/leaves/approve/${leaveId}`,
@@ -195,6 +231,8 @@ const ShortLeave = () => {
         logout();
         navigate("/login");
       }
+    } finally {
+      setDialogOpen(false); // Added to close dialog
     }
   };
 
@@ -204,16 +242,20 @@ const ShortLeave = () => {
   }
 
   if (isLoading) {
-    return <Typography>Loading...</Typography>;
+    return (
+      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
+        <CircularProgress />
+      </Box>
+    ); // Updated loading screen
   }
 
   const getStatusChip = (status) => {
     const statusValue = status || "Pending";
     switch (statusValue) {
       case "Approved":
-        return <Chip label="Approved" color="success" size="small" />;
+        return <Chip label="Approved" color="success" size="small" icon={<CheckCircleIcon />} />; // Added icon
       case "Rejected":
-        return <Chip label="Rejected" color="error" size="small" />;
+        return <Chip label="Rejected" color="error" size="small" icon={<CancelIcon />} />; // Added icon
       case "Pending":
       default:
         return <Chip label="Pending" color="warning" size="small" />;
@@ -221,30 +263,178 @@ const ShortLeave = () => {
   };
 
   return (
-    <Container maxWidth="md">
+    <Container maxWidth="lg"> {/* Updated maxWidth */}
       {effectiveUser.role === "Employee" && (
-        <Paper elevation={3} sx={{ padding: 4, marginTop: 4 }}>
+        <Paper elevation={3} sx={{ padding: 4, marginTop: 4, borderRadius: 2, boxShadow: 5 }}> {/* Enhanced styling */}
           <Typography variant="h5" gutterBottom>Short Leave Request</Typography>
           {message.text && <Alert severity={message.type}>{message.text}</Alert>}
           <form onSubmit={handleSubmit}>
-            <TextField fullWidth label="Chief Officer Name" value={chiefOfficerName} onChange={(e) => setChiefOfficerName(e.target.value)} margin="normal" required />
-            <TextField fullWidth label="Department" value={department} onChange={(e) => setDepartment(e.target.value)} margin="normal" required />
-            <TextField fullWidth label="Supervisor Name" value={supervisorName} onChange={(e) => setSupervisorName(e.target.value)} margin="normal" required />
-            <TextField fullWidth label="Employee Name" value={employeeName} onChange={(e) => setEmployeeName(e.target.value)} margin="normal" required />
-            <TextField fullWidth label="Person Number" value={personNumber} onChange={(e) => setPersonNumber(e.target.value)} margin="normal" required />
-            <TextField fullWidth label="Days Applied" type="number" value={daysApplied} onChange={(e) => setDaysApplied(e.target.value)} margin="normal" required inputProps={{ min: 1, max: 5 }} />
-            <TextField fullWidth label="Start Date" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} InputLabelProps={{ shrink: true }} margin="normal" required />
-            <TextField fullWidth label="End Date" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} InputLabelProps={{ shrink: true }} margin="normal" required />
-            <TextField fullWidth label="Reason" value={reason} onChange={(e) => setReason(e.target.value)} margin="normal" required />
-            <TextField fullWidth label="Assigned To Name" value={assignedToName} onChange={(e) => setAssignedToName(e.target.value)} margin="normal" />
-            <TextField fullWidth label="Assigned To Designation" value={assignedToDesignation} onChange={(e) => setAssignedToDesignation(e.target.value)} margin="normal" />
-            <Button type="submit" variant="contained" color="primary" fullWidth sx={{ marginTop: 2 }}>Submit Short Leave</Button>
+            <Grid container spacing={2}> {/* Added Grid layout */}
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Chief Officer Name"
+                  value={chiefOfficerName}
+                  onChange={(e) => setChiefOfficerName(e.target.value)}
+                  margin="normal"
+                  required
+                  helperText="Enter the name of the Chief Officer" // Added helper text
+                  aria-label="Chief Officer Name" // Added accessibility
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Department"
+                  value={department}
+                  onChange={(e) => setDepartment(e.target.value)}
+                  margin="normal"
+                  required
+                  helperText="Your department" // Added helper text
+                  aria-label="Department" // Added accessibility
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Supervisor Name"
+                  value={supervisorName}
+                  onChange={(e) => setSupervisorName(e.target.value)}
+                  margin="normal"
+                  required
+                  helperText="Your supervisor's name" // Added helper text
+                  aria-label="Supervisor Name" // Added accessibility
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Employee Name"
+                  value={employeeName}
+                  onChange={(e) => setEmployeeName(e.target.value)}
+                  margin="normal"
+                  required
+                  helperText="Your full name" // Added helper text
+                  aria-label="Employee Name" // Added accessibility
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Person Number"
+                  value={personNumber}
+                  onChange={(e) => setPersonNumber(e.target.value)}
+                  margin="normal"
+                  required
+                  helperText="Your personnel number" // Added helper text
+                  aria-label="Person Number" // Added accessibility
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Days Applied"
+                  type="number"
+                  value={daysApplied}
+                  onChange={(e) => setDaysApplied(e.target.value)}
+                  margin="normal"
+                  required
+                  inputProps={{ min: 1, max: 5 }}
+                  helperText="Number of working days (1-5)" // Added helper text
+                  aria-label="Days Applied" // Added accessibility
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Start Date"
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  InputLabelProps={{ shrink: true }}
+                  margin="normal"
+                  required
+                  helperText="Select start date" // Added helper text
+                  aria-label="Start Date" // Added accessibility
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="End Date"
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  InputLabelProps={{ shrink: true }}
+                  margin="normal"
+                  required
+                  helperText="Select end date" // Added helper text
+                  aria-label="End Date" // Added accessibility
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Reason"
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                  margin="normal"
+                  required
+                  multiline // Added for better input
+                  rows={2} // Added for better input
+                  helperText="Reason for your leave" // Added helper text
+                  aria-label="Reason" // Added accessibility
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Assigned To Name"
+                  value={assignedToName}
+                  onChange={(e) => setAssignedToName(e.target.value)}
+                  margin="normal"
+                  helperText="Optional: Name of assignee" // Added helper text
+                  aria-label="Assigned To Name" // Added accessibility
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Assigned To Designation"
+                  value={assignedToDesignation}
+                  onChange={(e) => setAssignedToDesignation(e.target.value)}
+                  margin="normal"
+                  helperText="Optional: Assignee's designation" // Added helper text
+                  aria-label="Assigned To Designation" // Added accessibility
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <Button
+                  type="submit"
+                  variant="contained"
+                  color="primary"
+                  fullWidth
+                  sx={{ marginTop: 2, borderRadius: 2, padding: "8px 24px" }} // Enhanced styling
+                  disabled={submitting} // Added for loading state
+                  aria-label="Submit Short Leave" // Added accessibility
+                >
+                  {submitting ? "Submitting..." : "Submit Short Leave"} {/* Added loading state */}
+                </Button>
+              </Grid>
+            </Grid>
           </form>
         </Paper>
       )}
 
-      <Paper elevation={3} sx={{ padding: 4, marginTop: 4 }}>
-        <Typography variant="h6" gutterBottom>Short Leave Policies</Typography>
+      <Paper elevation={3} sx={{ padding: 4, marginTop: 4, borderRadius: 2, boxShadow: 5 }}> {/* Enhanced styling */}
+        <Typography variant="h6" gutterBottom>
+          Short Leave Policies
+          <Tooltip title="Key rules for short leave requests" arrow> {/* Added tooltip */}
+            <IconButton size="small" sx={{ ml: 1 }}>
+              <InfoIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        </Typography>
         <Box component="ul" sx={{ pl: 2 }}>
           <li>Days applied must not exceed 5 days.</li>
           <li>Must be submitted at least 7 days in advance, unless an emergency.</li>
@@ -254,9 +444,9 @@ const ShortLeave = () => {
       </Paper>
 
       {effectiveUser.role === "Supervisor" && (
-        <Paper elevation={3} sx={{ padding: 4, marginTop: 4, overflowX: "auto" }}>
+        <Paper elevation={3} sx={{ padding: 4, marginTop: 4, overflowX: "auto", borderRadius: 2, boxShadow: 5 }}> {/* Enhanced styling */}
           <Typography variant="h6" gutterBottom>Pending Short Leave Approvals</Typography>
-          <Table sx={{ minWidth: "1200px" }}>
+          <Table stickyHeader> {/* Removed minWidth */}
             <TableHead>
               <TableRow>
                 <TableCell>Employee</TableCell>
@@ -283,11 +473,25 @@ const ShortLeave = () => {
                         onChange={(e) => setComments(prev => ({ ...prev, [leave._id]: e.target.value }))}
                         size="small"
                         sx={{ mr: 1 }}
+                        aria-label={`Comment for ${leave.employeeName}`} // Added accessibility
                       />
-                      <Button onClick={() => handleApproval(leave._id, "Approved")} variant="contained" color="success" size="small" sx={{ mr: 1 }}>
+                      <Button
+                        onClick={() => handleApprovalConfirm(leave._id, "Approved")} // Updated for dialog
+                        variant="contained"
+                        color="success"
+                        size="small"
+                        sx={{ mr: 1 }}
+                        aria-label={`Approve leave for ${leave.employeeName}`} // Added accessibility
+                      >
                         Approve
                       </Button>
-                      <Button onClick={() => handleApproval(leave._id, "Rejected")} variant="contained" color="error" size="small">
+                      <Button
+                        onClick={() => handleApprovalConfirm(leave._id, "Rejected")} // Updated for dialog
+                        variant="contained"
+                        color="error"
+                        size="small"
+                        aria-label={`Reject leave for ${leave.employeeName}`} // Added accessibility
+                      >
                         Reject
                       </Button>
                     </TableCell>
@@ -303,10 +507,10 @@ const ShortLeave = () => {
         </Paper>
       )}
 
-      <Paper elevation={3} sx={{ padding: 4, marginTop: 4 }}>
+      <Paper elevation={3} sx={{ padding: 4, marginTop: 4, borderRadius: 2, boxShadow: 5 }}> {/* Enhanced styling */}
         <Typography variant="h6" gutterBottom>My Short Leave Requests</Typography>
         <TableContainer sx={{ maxHeight: 400, overflowX: "auto" }}>
-          <Table stickyHeader sx={{ minWidth: "1400px" }}>
+          <Table stickyHeader> {/* Removed minWidth */}
             <TableHead>
               <TableRow>
                 <TableCell sx={{ fontWeight: "bold", bgcolor: "#f5f5f5" }}>Chief Officer</TableCell>
@@ -362,6 +566,18 @@ const ShortLeave = () => {
           </Table>
         </TableContainer>
       </Paper>
+
+      {/* Added Confirmation Dialog */}
+      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)}>
+        <DialogTitle>Confirm {dialogData.status}</DialogTitle>
+        <DialogContent>
+          <Typography>Are you sure you want to {dialogData.status.toLowerCase()} this leave request?</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDialogOpen(false)} color="primary">Cancel</Button>
+          <Button onClick={handleApproval} variant="contained" color={dialogData.status === "Approved" ? "success" : "error"}>Confirm</Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };

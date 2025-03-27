@@ -18,7 +18,17 @@ import {
   TableContainer,
   Chip,
   Tooltip,
+  Grid,
+  CircularProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  IconButton,
 } from "@mui/material";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import CancelIcon from "@mui/icons-material/Cancel";
+import InfoIcon from "@mui/icons-material/Info";
 
 const formatDate = (dateString) => {
   const date = new Date(dateString);
@@ -48,6 +58,9 @@ const AnnualLeave = () => {
   const [message, setMessage] = useState({ type: "", text: "" });
   const [isLoading, setIsLoading] = useState(true);
   const [comments, setComments] = useState({});
+  const [submitting, setSubmitting] = useState(false); // Added for submit button loading state
+  const [dialogOpen, setDialogOpen] = useState(false); // Added for approval confirmation dialog
+  const [dialogData, setDialogData] = useState({ leaveId: "", status: "" }); // Added for dialog data
 
   const localToken = localStorage.getItem("token");
   const localUser = JSON.parse(localStorage.getItem("user") || "null");
@@ -191,6 +204,7 @@ const AnnualLeave = () => {
 
     if (!validateForm()) return;
 
+    setSubmitting(true); // Added for loading state
     try {
       const res = await axios.post(
         "http://localhost:5000/api/leaves/apply",
@@ -231,10 +245,18 @@ const AnnualLeave = () => {
         logout();
         navigate("/login");
       }
+    } finally {
+      setSubmitting(false); // Added for loading state
     }
   };
 
-  const handleApproval = async (leaveId, status) => {
+  const handleApprovalConfirm = (leaveId, status) => { // Added for confirmation dialog
+    setDialogData({ leaveId, status });
+    setDialogOpen(true);
+  };
+
+  const handleApproval = async () => { // Modified to work with dialog
+    const { leaveId, status } = dialogData;
     const comment = comments[leaveId] || "";
     try {
       const res = await axios.put(
@@ -254,6 +276,8 @@ const AnnualLeave = () => {
         logout();
         navigate("/login");
       }
+    } finally {
+      setDialogOpen(false); // Added to close dialog
     }
   };
 
@@ -263,7 +287,11 @@ const AnnualLeave = () => {
   }
 
   if (isLoading) {
-    return <Typography>Loading...</Typography>;
+    return (
+      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
+        <CircularProgress />
+      </Box>
+    ); // Updated loading screen
   }
 
   const availableDays = leaveBalance.leaveBalanceBF + leaveBalance.currentYearLeave - leaveBalance.leaveTakenThisYear;
@@ -272,9 +300,9 @@ const AnnualLeave = () => {
     const statusValue = status || "Pending";
     switch (statusValue) {
       case "Approved":
-        return <Chip label="Approved" color="success" size="small" />;
+        return <Chip label="Approved" color="success" size="small" icon={<CheckCircleIcon />} />; // Added icon
       case "Rejected":
-        return <Chip label="Rejected" color="error" size="small" />;
+        return <Chip label="Rejected" color="error" size="small" icon={<CancelIcon />} />; // Added icon
       case "Pending":
       default:
         return <Chip label="Pending" color="warning" size="small" />;
@@ -282,38 +310,260 @@ const AnnualLeave = () => {
   };
 
   return (
-    <Container maxWidth="md">
+    <Container maxWidth="lg"> {/* Updated maxWidth */}
       {effectiveUser.role === "Employee" && (
-        <Paper elevation={3} sx={{ padding: 4, marginTop: 4 }}>
+        <Paper elevation={3} sx={{ padding: 4, marginTop: 4, borderRadius: 2, boxShadow: 5 }}> {/* Enhanced styling */}
           <Typography variant="h5" gutterBottom>Annual Leave Application</Typography>
           {message.text && <Alert severity={message.type}>{message.text}</Alert>}
           <form onSubmit={handleSubmit}>
-            <TextField fullWidth label="Name" value={employeeName} onChange={(e) => setEmployeeName(e.target.value)} sx={{ mb: 2 }} required />
-            <TextField fullWidth label="P/F No." value={personNumber} onChange={(e) => setPersonNumber(e.target.value)} sx={{ mb: 2 }} required />
-            <TextField fullWidth label="Department" value={department} onChange={(e) => setDepartment(e.target.value)} sx={{ mb: 2 }} required />
-            <TextField fullWidth label="Sector" value={sector} onChange={(e) => setSector(e.target.value)} sx={{ mb: 2 }} />
-            <TextField fullWidth label="Days Applied" type="number" value={daysApplied} onChange={(e) => setDaysApplied(e.target.value)} sx={{ mb: 2 }} required inputProps={{ min: 1, max: 30 }} />
-            <TextField fullWidth label="Start Date" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} InputLabelProps={{ shrink: true }} sx={{ mb: 2 }} required />
-            <TextField fullWidth label="End Date" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} InputLabelProps={{ shrink: true }} sx={{ mb: 2 }} required />
-            <TextField fullWidth label="Address While Away" value={addressWhileAway} onChange={(e) => setAddressWhileAway(e.target.value)} sx={{ mb: 2 }} />
-            <TextField fullWidth label="Email Address" value={emailAddress} onChange={(e) => setEmailAddress(e.target.value)} sx={{ mb: 2 }} />
-            <TextField fullWidth label="Phone No." value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} sx={{ mb: 2 }} />
-            <TextField fullWidth label="Reason" value={reason} onChange={(e) => setReason(e.target.value)} sx={{ mb: 2 }} required />
-            <Typography variant="h6" sx={{ mt: 2 }}>Leave Days Computation</Typography>
-            <TextField fullWidth label="Leave Balance B/F" type="number" value={leaveBalance.leaveBalanceBF} sx={{ mb: 2 }} disabled />
-            <TextField fullWidth label="Current Year Leave" type="number" value={leaveBalance.currentYearLeave} sx={{ mb: 2 }} disabled />
-            <TextField fullWidth label="Leave Taken This Year" type="number" value={leaveBalance.leaveTakenThisYear} sx={{ mb: 2 }} disabled />
-            <TextField fullWidth label="Available Days" type="number" value={availableDays} sx={{ mb: 2 }} disabled helperText="Calculated as B/F + Current - Taken" />
-            <TextField fullWidth label="Sectional Head Name" value={sectionalHeadName} onChange={(e) => setSectionalHeadName(e.target.value)} sx={{ mb: 2 }} />
-            <TextField fullWidth label="Departmental Head Name" value={departmentalHeadName} onChange={(e) => setDepartmentalHeadName(e.target.value)} sx={{ mb: 2 }} />
-            <TextField fullWidth label="HR Director Name" value={HRDirectorName} onChange={(e) => setHRDirectorName(e.target.value)} sx={{ mb: 2 }} />
-            <Button type="submit" variant="contained" color="primary" fullWidth sx={{ marginTop: 2 }}>Submit Annual Leave</Button>
+            <Grid container spacing={2}> {/* Added Grid layout */}
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Name"
+                  value={employeeName}
+                  onChange={(e) => setEmployeeName(e.target.value)}
+                  sx={{ mb: 2 }}
+                  required
+                  helperText="Your full name" // Added helper text
+                  aria-label="Employee Name" // Added accessibility
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="P/F No."
+                  value={personNumber}
+                  onChange={(e) => setPersonNumber(e.target.value)}
+                  sx={{ mb: 2 }}
+                  required
+                  helperText="Your personnel number" // Added helper text
+                  aria-label="Person Number" // Added accessibility
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Department"
+                  value={department}
+                  onChange={(e) => setDepartment(e.target.value)}
+                  sx={{ mb: 2 }}
+                  required
+                  helperText="Your department" // Added helper text
+                  aria-label="Department" // Added accessibility
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Sector"
+                  value={sector}
+                  onChange={(e) => setSector(e.target.value)}
+                  sx={{ mb: 2 }}
+                  helperText="Your sector (optional)" // Added helper text
+                  aria-label="Sector" // Added accessibility
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Days Applied"
+                  type="number"
+                  value={daysApplied}
+                  onChange={(e) => setDaysApplied(e.target.value)}
+                  sx={{ mb: 2 }}
+                  required
+                  inputProps={{ min: 1, max: 30 }}
+                  helperText="Number of working days (1-30)" // Added helper text
+                  aria-label="Days Applied" // Added accessibility
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Start Date"
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  InputLabelProps={{ shrink: true }}
+                  sx={{ mb: 2 }}
+                  required
+                  helperText="Select start date" // Added helper text
+                  aria-label="Start Date" // Added accessibility
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="End Date"
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  InputLabelProps={{ shrink: true }}
+                  sx={{ mb: 2 }}
+                  required
+                  helperText="Select end date" // Added helper text
+                  aria-label="End Date" // Added accessibility
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Address While Away"
+                  value={addressWhileAway}
+                  onChange={(e) => setAddressWhileAway(e.target.value)}
+                  sx={{ mb: 2 }}
+                  helperText="Where you’ll be during leave (optional)" // Added helper text
+                  aria-label="Address While Away" // Added accessibility
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Email Address"
+                  value={emailAddress}
+                  onChange={(e) => setEmailAddress(e.target.value)}
+                  sx={{ mb: 2 }}
+                  helperText="Your contact email (optional)" // Added helper text
+                  aria-label="Email Address" // Added accessibility
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Phone No."
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                  sx={{ mb: 2 }}
+                  helperText="Your contact phone number (optional)" // Added helper text
+                  aria-label="Phone Number" // Added accessibility
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Reason"
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                  sx={{ mb: 2 }}
+                  required
+                  multiline // Added for better input
+                  rows={2} // Added for better input
+                  helperText="Reason for your leave" // Added helper text
+                  aria-label="Reason" // Added accessibility
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <Typography variant="h6" sx={{ mt: 2 }} color="primary">Leave Days Computation</Typography> {/* Enhanced styling */}
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Leave Balance B/F"
+                  type="number"
+                  value={leaveBalance.leaveBalanceBF}
+                  sx={{ mb: 2 }}
+                  disabled
+                  helperText="Balance brought forward" // Added helper text
+                  aria-label="Leave Balance B/F" // Added accessibility
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Current Year Leave"
+                  type="number"
+                  value={leaveBalance.currentYearLeave}
+                  sx={{ mb: 2 }}
+                  disabled
+                  helperText="This year’s allocation" // Added helper text
+                  aria-label="Current Year Leave" // Added accessibility
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Leave Taken This Year"
+                  type="number"
+                  value={leaveBalance.leaveTakenThisYear}
+                  sx={{ mb: 2 }}
+                  disabled
+                  helperText="Days already taken" // Added helper text
+                  aria-label="Leave Taken This Year" // Added accessibility
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Available Days"
+                  type="number"
+                  value={availableDays}
+                  sx={{ mb: 2 }}
+                  disabled
+                  helperText="Calculated as B/F + Current - Taken" // Existing helper text
+                  aria-label="Available Days" // Added accessibility
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Sectional Head Name"
+                  value={sectionalHeadName}
+                  onChange={(e) => setSectionalHeadName(e.target.value)}
+                  sx={{ mb: 2 }}
+                  helperText="Sectional Head’s name (optional)" // Added helper text
+                  aria-label="Sectional Head Name" // Added accessibility
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Departmental Head Name"
+                  value={departmentalHeadName}
+                  onChange={(e) => setDepartmentalHeadName(e.target.value)}
+                  sx={{ mb: 2 }}
+                  helperText="Departmental Head’s name (optional)" // Added helper text
+                  aria-label="Departmental Head Name" // Added accessibility
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="HR Director Name"
+                  value={HRDirectorName}
+                  onChange={(e) => setHRDirectorName(e.target.value)}
+                  sx={{ mb: 2 }}
+                  helperText="HR Director’s name (optional)" // Added helper text
+                  aria-label="HR Director Name" // Added accessibility
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <Button
+                  type="submit"
+                  variant="contained"
+                  color="primary"
+                  fullWidth
+                  sx={{ marginTop: 2, borderRadius: 2, padding: "8px 24px" }} // Enhanced styling
+                  disabled={submitting} // Added for loading state
+                  aria-label="Submit Annual Leave" // Added accessibility
+                >
+                  {submitting ? "Submitting..." : "Submit Annual Leave"} {/* Added loading state */}
+                </Button>
+              </Grid>
+            </Grid>
           </form>
         </Paper>
       )}
 
-      <Paper elevation={3} sx={{ padding: 4, marginTop: 4 }}>
-        <Typography variant="h6" gutterBottom>Annual Leave Policies</Typography>
+      <Paper elevation={3} sx={{ padding: 4, marginTop: 4, borderRadius: 2, boxShadow: 5 }}> {/* Enhanced styling */}
+        <Typography variant="h6" gutterBottom>
+          Annual Leave Policies
+          <Tooltip title="Key rules for annual leave requests" arrow> {/* Added tooltip */}
+            <IconButton size="small" sx={{ ml: 1 }}>
+              <InfoIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        </Typography>
         <Box component="ul" sx={{ pl: 2 }}>
           <li>Maximum of 30 working days per request.</li>
           <li>Must be submitted at least 7 days in advance.</li>
@@ -325,9 +575,9 @@ const AnnualLeave = () => {
       </Paper>
 
       {["SectionalHead", "DepartmentalHead", "HRDirector"].includes(effectiveUser.role) && (
-        <Paper elevation={3} sx={{ padding: 4, marginTop: 4, overflowX: "auto" }}>
+        <Paper elevation={3} sx={{ padding: 4, marginTop: 4, overflowX: "auto", borderRadius: 2, boxShadow: 5 }}> {/* Enhanced styling */}
           <Typography variant="h6" gutterBottom>Pending Annual Leave Approvals</Typography>
-          <Table sx={{ minWidth: "1200px" }}>
+          <Table stickyHeader> {/* Removed minWidth */}
             <TableHead>
               <TableRow>
                 <TableCell>Employee</TableCell>
@@ -354,11 +604,25 @@ const AnnualLeave = () => {
                         onChange={(e) => setComments(prev => ({ ...prev, [leave._id]: e.target.value }))}
                         size="small"
                         sx={{ mr: 1 }}
+                        aria-label={`Comment for ${leave.employeeName}`} // Added accessibility
                       />
-                      <Button onClick={() => handleApproval(leave._id, "Approved")} variant="contained" color="success" size="small" sx={{ mr: 1 }}>
+                      <Button
+                        onClick={() => handleApprovalConfirm(leave._id, "Approved")} // Updated for dialog
+                        variant="contained"
+                        color="success"
+                        size="small"
+                        sx={{ mr: 1 }}
+                        aria-label={`Approve leave for ${leave.employeeName}`} // Added accessibility
+                      >
                         Approve
                       </Button>
-                      <Button onClick={() => handleApproval(leave._id, "Rejected")} variant="contained" color="error" size="small">
+                      <Button
+                        onClick={() => handleApprovalConfirm(leave._id, "Rejected")} // Updated for dialog
+                        variant="contained"
+                        color="error"
+                        size="small"
+                        aria-label={`Reject leave for ${leave.employeeName}`} // Added accessibility
+                      >
                         Reject
                       </Button>
                     </TableCell>
@@ -374,10 +638,10 @@ const AnnualLeave = () => {
         </Paper>
       )}
 
-      <Paper elevation={3} sx={{ padding: 4, marginTop: 4 }}>
+      <Paper elevation={3} sx={{ padding: 4, marginTop: 4, borderRadius: 2, boxShadow: 5 }}> {/* Enhanced styling */}
         <Typography variant="h6" gutterBottom>My Annual Leave Requests</Typography>
         <TableContainer sx={{ maxHeight: 400, overflowX: "auto" }}>
-          <Table stickyHeader sx={{ minWidth: "1400px" }}>
+          <Table stickyHeader> {/* Removed minWidth */}
             <TableHead>
               <TableRow>
                 <TableCell sx={{ fontWeight: "bold", bgcolor: "#f5f5f5" }}>Name</TableCell>
@@ -431,6 +695,18 @@ const AnnualLeave = () => {
           </Table>
         </TableContainer>
       </Paper>
+
+      {/* Added Confirmation Dialog */}
+      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)}>
+        <DialogTitle>Confirm {dialogData.status}</DialogTitle>
+        <DialogContent>
+          <Typography>Are you sure you want to {dialogData.status.toLowerCase()} this leave request?</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDialogOpen(false)} color="primary">Cancel</Button>
+          <Button onClick={handleApproval} variant="contained" color={dialogData.status === "Approved" ? "success" : "error"}>Confirm</Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };

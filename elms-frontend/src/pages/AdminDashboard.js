@@ -71,6 +71,34 @@ const validatePhoneNumber = (phoneNumber) => {
   return phoneRegex.test(phoneNumber);
 };
 
+// Role-based filtering function
+const filterLeavesByPendingActions = (leaves, isShortLeave, userRole, showPendingActionsOnly) => {
+  if (!showPendingActionsOnly) return leaves;
+
+  return leaves.filter((leave) => {
+    if (userRole === "Supervisor" && isShortLeave) {
+      return leave.status === "Pending";
+    } else if (userRole === "SectionalHead" && !isShortLeave) {
+      return leave.status === "Pending";
+    } else if (userRole === "DepartmentalHead" && !isShortLeave) {
+      return leave.status === "RecommendedBySectional";
+    } else if (userRole === "HRDirector") {
+      return isShortLeave
+        ? leave.status === "RecommendedBySectional"
+        : leave.status === "RecommendedByDepartmental";
+    } else if (userRole === "Admin") {
+      return (
+        leave.status === "Pending" ||
+        (isShortLeave && leave.status === "RecommendedBySectional") ||
+        (!isShortLeave &&
+          (leave.status === "RecommendedBySectional" ||
+            leave.status === "RecommendedByDepartmental"))
+      );
+    }
+    return false;
+  });
+};
+
 // Styled components for custom styling
 const StyledAppBar = styled(AppBar)(({ theme }) => ({
   backgroundColor: "#1976d2",
@@ -118,13 +146,14 @@ const AdminDashboard = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [activeSection, setActiveSection] = useState("Short Leave Requests");
   const [selectedLeave, setSelectedLeave] = useState(null);
-  const [selectedEvent, setSelectedEvent] = useState(null); // Added: For event modal
+  const [selectedEvent, setSelectedEvent] = useState(null);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [showPendingActionsOnly, setShowPendingActionsOnly] = useState(false); // Added: State for filter toggle
   const [formData, setFormData] = useState({
     name: "",
     department: "",
     phoneNumber: "",
-    profilePicture: null, // Changed: Now stores a File object
+    profilePicture: null,
     chiefOfficerName: "",
     supervisorName: "",
     personNumber: "",
@@ -134,7 +163,7 @@ const AdminDashboard = () => {
     departmentalHeadName: "",
     HRDirectorName: "",
   });
-  const [formErrors, setFormErrors] = useState({}); // Added: For form validation
+  const [formErrors, setFormErrors] = useState({});
 
   const localToken = localStorage.getItem("token");
   const effectiveToken = token || localToken;
@@ -181,7 +210,7 @@ const AdminDashboard = () => {
         name: res.data.name || "",
         department: res.data.department || "",
         phoneNumber: res.data.phoneNumber || "",
-        profilePicture: null, // File input will be handled separately
+        profilePicture: null,
         chiefOfficerName: res.data.chiefOfficerName || "",
         supervisorName: res.data.supervisorName || "",
         personNumber: res.data.personNumber || "",
@@ -259,15 +288,15 @@ const AdminDashboard = () => {
       const isShortLeave = shortLeaves.some((l) => l._id === leaveId);
 
       if (effectiveUser.role === "Supervisor" && isShortLeave) {
-        updates.sectionalHeadRecommendation = action; // Set recommendation
+        updates.sectionalHeadRecommendation = action;
         updates.sectionalHeadDate = currentDate;
         updates.status = action === "Recommended" ? "RecommendedBySectional" : "Pending";
       } else if (effectiveUser.role === "SectionalHead" && !isShortLeave) {
-        updates.sectionalHeadRecommendation = action; // Set recommendation
+        updates.sectionalHeadRecommendation = action;
         updates.sectionalHeadDate = currentDate;
         updates.status = action === "Recommended" ? "RecommendedBySectional" : "Pending";
       } else if (effectiveUser.role === "DepartmentalHead" && !isShortLeave) {
-        updates.departmentalHeadRecommendation = action; // Set recommendation
+        updates.departmentalHeadRecommendation = action;
         updates.departmentalHeadDate = currentDate;
         updates.departmentalHeadDaysGranted = leave.daysApplied;
         updates.departmentalHeadStartDate = leave.startDate;
@@ -275,10 +304,9 @@ const AdminDashboard = () => {
         updates.departmentalHeadResumeDate = calculateNextWorkingDay(leave.endDate);
         updates.status = action === "Recommended" ? "RecommendedByDepartmental" : "RecommendedBySectional";
       } else if (effectiveUser.role === "HRDirector") {
-        updates.approverRecommendation = action === "Approve" ? "Approved" : "Not Approved"; // Set recommendation
+        updates.approverRecommendation = action === "Approve" ? "Approved" : "Not Approved";
         updates.approverDate = currentDate;
         updates.status = action === "Approve" ? "Approved" : "Rejected";
-        // Updated: When HR Director approves/rejects, ensure previous recommendations are set
         if (!leave.sectionalHeadRecommendation) {
           updates.sectionalHeadRecommendation = "Recommended";
           updates.sectionalHeadDate = currentDate;
@@ -294,25 +322,23 @@ const AdminDashboard = () => {
       } else if (effectiveUser.role === "Admin") {
         if (isShortLeave) {
           if (action === "Approve" || action === "Reject") {
-            updates.approverRecommendation = action === "Approve" ? "Approved" : "Not Approved"; // Set recommendation
+            updates.approverRecommendation = action === "Approve" ? "Approved" : "Not Approved";
             updates.approverDate = currentDate;
             updates.status = action === "Approve" ? "Approved" : "Rejected";
-            // Updated: When Admin approves/rejects a short leave, ensure sectional recommendation is set
             if (!leave.sectionalHeadRecommendation) {
               updates.sectionalHeadRecommendation = "Recommended";
               updates.sectionalHeadDate = currentDate;
             }
           } else {
-            updates.sectionalHeadRecommendation = action; // Set recommendation
+            updates.sectionalHeadRecommendation = action;
             updates.sectionalHeadDate = currentDate;
             updates.status = action === "Recommended" ? "RecommendedBySectional" : "Pending";
           }
         } else {
           if (action === "Approve" || action === "Reject") {
-            updates.approverRecommendation = action === "Approve" ? "Approved" : "Not Approved"; // Set recommendation
+            updates.approverRecommendation = action === "Approve" ? "Approved" : "Not Approved";
             updates.approverDate = currentDate;
             updates.status = action === "Approve" ? "Approved" : "Rejected";
-            // Updated: When Admin approves/rejects an annual leave, ensure sectional and departmental recommendations are set
             if (!leave.sectionalHeadRecommendation) {
               updates.sectionalHeadRecommendation = "Recommended";
               updates.sectionalHeadDate = currentDate;
@@ -326,13 +352,12 @@ const AdminDashboard = () => {
               updates.departmentalHeadResumeDate = calculateNextWorkingDay(leave.endDate);
             }
           } else if (action === "Recommended" || action === "Not Recommended") {
-            // Admin acts as both Sectional and Departmental Head sequentially
             if (!leave.sectionalHeadRecommendation) {
-              updates.sectionalHeadRecommendation = action; // Set recommendation
+              updates.sectionalHeadRecommendation = action;
               updates.sectionalHeadDate = currentDate;
               updates.status = action === "Recommended" ? "RecommendedBySectional" : "Pending";
             } else if (!leave.departmentalHeadRecommendation) {
-              updates.departmentalHeadRecommendation = action; // Set recommendation
+              updates.departmentalHeadRecommendation = action;
               updates.departmentalHeadDate = currentDate;
               updates.departmentalHeadDaysGranted = leave.daysApplied;
               updates.departmentalHeadStartDate = leave.startDate;
@@ -416,9 +441,9 @@ const AdminDashboard = () => {
         return <Chip label="Approved" color="success" size="small" />;
       case "Rejected":
         return <Chip label="Rejected" color="error" size="small" />;
-      case "RecommendedBySectional": // Updated: Added new status
+      case "RecommendedBySectional":
         return <Chip label="Recommended by Sectional" color="info" size="small" />;
-      case "RecommendedByDepartmental": // Updated: Added new status
+      case "RecommendedByDepartmental":
         return <Chip label="Recommended by Departmental" color="info" size="small" />;
       case "Pending":
       default:
@@ -429,11 +454,10 @@ const AdminDashboard = () => {
   const handleInputChange = (e) => {
     const { name, value, files } = e.target;
     if (name === "profilePicture") {
-      setFormData({ ...formData, [name]: files[0] }); // Handle file input
+      setFormData({ ...formData, [name]: files[0] });
     } else {
       setFormData({ ...formData, [name]: value });
     }
-    // Clear error for the field being edited
     setFormErrors({ ...formErrors, [name]: "" });
   };
 
@@ -554,6 +578,15 @@ const AdminDashboard = () => {
             <Typography variant="h5" sx={{ mb: 3, fontWeight: "bold" }}>
               Short Leave Requests
             </Typography>
+            <Box sx={{ mb: 2 }}>
+              <StyledButton
+                variant={showPendingActionsOnly ? "contained" : "outlined"}
+                color="primary"
+                onClick={() => setShowPendingActionsOnly(!showPendingActionsOnly)}
+              >
+                {showPendingActionsOnly ? "Show All Leaves" : "Show Pending Actions Only"}
+              </StyledButton>
+            </Box>
             <TableContainer sx={{ maxHeight: 500, overflowX: "auto" }}>
               <Table stickyHeader sx={{ minWidth: "1200px" }}>
                 <TableHead>
@@ -569,8 +602,8 @@ const AdminDashboard = () => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {shortLeaves.length > 0 ? (
-                    shortLeaves.map((leave) => (
+                  {filterLeavesByPendingActions(shortLeaves, true, effectiveUser.role, showPendingActionsOnly).length > 0 ? (
+                    filterLeavesByPendingActions(shortLeaves, true, effectiveUser.role, showPendingActionsOnly).map((leave) => (
                       <TableRow
                         key={leave._id}
                         hover
@@ -650,7 +683,7 @@ const AdminDashboard = () => {
                   ) : (
                     <TableRow>
                       <TableCell colSpan={8} align="center">
-                        No short leave requests found
+                        {showPendingActionsOnly ? "No pending actions for your role" : "No short leave requests found"}
                       </TableCell>
                     </TableRow>
                   )}
@@ -665,6 +698,15 @@ const AdminDashboard = () => {
             <Typography variant="h5" sx={{ mb: 3, fontWeight: "bold" }}>
               Annual Leave Requests
             </Typography>
+            <Box sx={{ mb: 2 }}>
+              <StyledButton
+                variant={showPendingActionsOnly ? "contained" : "outlined"}
+                color="primary"
+                onClick={() => setShowPendingActionsOnly(!showPendingActionsOnly)}
+              >
+                {showPendingActionsOnly ? "Show All Leaves" : "Show Pending Actions Only"}
+              </StyledButton>
+            </Box>
             <TableContainer sx={{ maxHeight: 500, overflowX: "auto" }}>
               <Table stickyHeader sx={{ minWidth: "1200px" }}>
                 <TableHead>
@@ -680,8 +722,8 @@ const AdminDashboard = () => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {annualLeaves.length > 0 ? (
-                    annualLeaves.map((leave) => (
+                  {filterLeavesByPendingActions(annualLeaves, false, effectiveUser.role, showPendingActionsOnly).length > 0 ? (
+                    filterLeavesByPendingActions(annualLeaves, false, effectiveUser.role, showPendingActionsOnly).map((leave) => (
                       <TableRow
                         key={leave._id}
                         hover
@@ -783,7 +825,7 @@ const AdminDashboard = () => {
                   ) : (
                     <TableRow>
                       <TableCell colSpan={8} align="center">
-                        No annual leave requests found
+                        {showPendingActionsOnly ? "No pending actions for your role" : "No annual leave requests found"}
                       </TableCell>
                     </TableRow>
                   )}
