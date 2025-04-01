@@ -2,7 +2,7 @@ import { useState, useContext, useEffect } from "react";
 import { AuthContext } from "../context/AuthContext";
 import { TextField, Button, Container, Typography, Paper, Box } from "@mui/material";
 import { useNavigate } from "react-router-dom";
-
+import apiClient from "../utils/apiClient";
 const Login = () => {
   const { login } = useContext(AuthContext);
   const navigate = useNavigate();
@@ -21,10 +21,10 @@ const Login = () => {
    
     try{
       console.log("Attempting login with", { email,password });
-    const response = await fetch("http://localhost:5000/api/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
+      const response = await apiClient.post("/api/auth/login", {
+        email,
+        password,
+      
     });
 
     const data = await response.json();
