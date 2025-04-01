@@ -89,7 +89,7 @@ const EmployeeDashboard = () => {
       const url = "http://localhost:5000/api/leave-balances/";
       console.log("Fetching from URL:", url);
       try {
-        const res = await axios.get(url, {
+        const res = await apiClient.get(url, {
           headers: { Authorization: `Bearer ${effectiveToken}` },
           timeout: 10000,
         });
@@ -116,12 +116,12 @@ const EmployeeDashboard = () => {
       try {
         // Fetch Short Leave and Annual Leave separately
         const [shortLeaveRes, annualLeaveRes] = await Promise.all([
-          axios.get(url, {
+          apiClient.get(url, {
             headers: { Authorization: `Bearer ${effectiveToken}` },
             timeout: 10000,
             params: { leaveType: "Short Leave" },
           }),
-          axios.get(url, {
+          apiClient.get(url, {
             headers: { Authorization: `Bearer ${effectiveToken}` },
             timeout: 10000,
             params: { leaveType: "Annual Leave" },

@@ -90,8 +90,8 @@ const Profile = () => {
     }
     setSubmitting(true); // Added for loading state
     try {
-      const res = await axios.put(
-        "http://localhost:5000/api/profiles",
+      const res = await apiClient.put(
+        "/api/profiles",
         profile,
         { headers: { Authorization: `Bearer ${effectiveToken}` } }
       );

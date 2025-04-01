@@ -168,8 +168,7 @@ const ShortLeave = () => {
 
     setSubmitting(true); // Added for loading state
     try {
-      const res = await axios.post(
-        "http://localhost:5000/api/leaves/apply",
+      const res = await apiClient.post("/api/leaves/apply",
         {
           leaveType: "Short Leave",
           chiefOfficerName,
@@ -215,8 +214,8 @@ const ShortLeave = () => {
   const handleApproval = async () => { // Modified to work with dialog
     const { leaveId, status } = dialogData;
     try {
-      const res = await axios.put(
-        `http://localhost:5000/api/leaves/approve/${leaveId}`,
+      const res = await apiClient.put(
+        `/api/leaves/approve/${leaveId}`,
         { status, comment: comments[leaveId] || "" },
         { headers: { Authorization: `Bearer ${effectiveToken}` } }
       );

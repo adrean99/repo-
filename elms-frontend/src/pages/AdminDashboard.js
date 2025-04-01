@@ -374,7 +374,7 @@ const AdminDashboard = () => {
       }
 
       console.log("Updating leave:", leaveId, "with", updates, "by role:", effectiveUser.role);
-      await axios.patch(`http://localhost:5000/api/leaves/admin/leaves/${leaveId}`, updates, {
+      await apiClient.patch(`/api/leaves/admin/leaves/${leaveId}`, updates, {
         headers: { Authorization: `Bearer ${effectiveToken}` },
       });
 
@@ -493,8 +493,8 @@ const AdminDashboard = () => {
         }
       });
 
-      const res = await axios.put(
-        "http://localhost:5000/api/admin/profile",
+      const res = await apiClient.put(
+        "/api/admin/profile",
         formDataToSend,
         {
           headers: {

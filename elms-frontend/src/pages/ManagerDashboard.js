@@ -74,8 +74,8 @@ const ManagerDashboard = () => {
   // Approve or Reject Leave Request
   const handleLeaveRequestStatus = async (id, status) => {
     try {
-      await axios.put(
-        `http://localhost:5000/api/leaves/${id}`,
+      await apiClient.put(
+        `/api/leaves/${id}`,
         { status },
         {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
