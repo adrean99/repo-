@@ -1,6 +1,6 @@
 import { useState, useEffect, useContext } from "react";
 import { AuthContext } from "../context/AuthContext";
-import axios from "axios";
+import apiClient from"../utils/apiClient";
 import { useNavigate } from "react-router-dom";
 import { Container, Typography, Paper } from "@mui/material";
 
@@ -26,7 +26,7 @@ const LeaveCalendar = () => {
     const fetchLeaveData = async () => {
       console.log("Fetching leave data with token:", effectiveToken);
       try {
-        const res = await axios.get("http://localhost:5000/api/leaves/my-leaves", {
+        const res = await apiClient.get("/api/leaves/my-leaves", {
           headers: { Authorization: `Bearer ${effectiveToken}` },
         });
         console.log("Fetched leave data:", res.data);

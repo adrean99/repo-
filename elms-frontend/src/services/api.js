@@ -1,4 +1,4 @@
-import axios from "axios";
+import apiClient from"../utils/apiClient";
 
 const API_URL = process.env.REACT_APP_API_URL + "/auth";  // Dynamic API URL
 

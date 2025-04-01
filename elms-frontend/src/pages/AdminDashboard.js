@@ -1,6 +1,6 @@
 import { useState, useEffect, useContext } from "react";
 import { AuthContext } from "../context/AuthContext";
-import axios from "axios";
+import apiClient from"../utils/apiClient";
 import { useNavigate } from "react-router-dom";
 import {
   Container,
@@ -174,11 +174,11 @@ const AdminDashboard = () => {
     try {
       console.log("Fetching leaves with token:", effectiveToken);
       const [shortRes, annualRes] = await Promise.all([
-        axios.get("http://localhost:5000/api/leaves/admin/leaves?leaveType=Short%20Leave", {
+        apiClient.get("/api/leaves/admin/leaves?leaveType=Short%20Leave", {
           headers: { Authorization: `Bearer ${effectiveToken}` },
           timeout: 5000,
         }),
-        axios.get("http://localhost:5000/api/leaves/admin/leaves?leaveType=Annual%20Leave", {
+        apiClient.get("/api/leaves/admin/leaves?leaveType=Annual%20Leave", {
           headers: { Authorization: `Bearer ${effectiveToken}` },
           timeout: 5000,
         }),
@@ -201,7 +201,7 @@ const AdminDashboard = () => {
 
   const fetchProfile = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/admin/profile", {
+      const res = await apiClient.get("/api/admin/profile", {
         headers: { Authorization: `Bearer ${effectiveToken}` },
         timeout: 5000,
       });
@@ -231,7 +231,7 @@ const AdminDashboard = () => {
   const fetchLeaveEvents = async () => {
     setIsFetchingEvents(true);
     try {
-      const res = await axios.get("http://localhost:5000/api/leaves/all", {
+      const res = await apiClient.get("/api/leaves/all", {
         headers: { Authorization: `Bearer ${effectiveToken}` },
         timeout: 5000,
       });
@@ -379,10 +379,10 @@ const AdminDashboard = () => {
       });
 
       const [shortRes, annualRes] = await Promise.all([
-        axios.get("http://localhost:5000/api/leaves/admin/leaves?leaveType=Short%20Leave", {
+        apiClient.get("/api/leaves/admin/leaves?leaveType=Short%20Leave", {
           headers: { Authorization: `Bearer ${effectiveToken}` },
         }),
-        axios.get("http://localhost:5000/api/leaves/admin/leaves?leaveType=Annual%20Leave", {
+        apiClient.get("/api/leaves/admin/leaves?leaveType=Annual%20Leave", {
           headers: { Authorization: `Bearer ${effectiveToken}` },
         }),
       ]);

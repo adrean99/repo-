@@ -1,6 +1,6 @@
 import { useState, useEffect, useContext } from "react";
 import { AuthContext } from "../context/AuthContext";
-import axios from "axios";
+import apiClient from"../utils/apiClient";
 import { useNavigate } from "react-router-dom";
 import {
   Container,
@@ -89,7 +89,7 @@ const ShortLeave = () => {
     const fetchInitialData = async () => {
       setIsLoading(true);
       try {
-        const profileRes = await axios.get("http://localhost:5000/api/profiles", {
+        const profileRes = await apiClient.get("/api/profiles", {
           headers: { Authorization: `Bearer ${effectiveToken}` },
         });
         console.log("Profile fetched:", profileRes.data);
@@ -100,14 +100,14 @@ const ShortLeave = () => {
         setEmployeeName(profile.name || "");
         setPersonNumber(profile.personNumber || "");
 
-        const leavesRes = await axios.get("http://localhost:5000/api/leaves/my-leaves?leaveType=Short%20Leave", {
+        const leavesRes = await apiClient.get("/api/leaves/my-leaves?leaveType=Short%20Leave", {
           headers: { Authorization: `Bearer ${effectiveToken}` },
         });
         console.log("Fetched leave requests:", leavesRes.data);
         setLeaveRequests(Array.isArray(leavesRes.data) ? leavesRes.data : []);
 
         if (effectiveUser.role === "Supervisor") {
-          const pendingRes = await axios.get("http://localhost:5000/api/leaves/pending-approvals", {
+          const pendingRes = await apiClient.get("/api/leaves/pending-approvals", {
             headers: { Authorization: `Bearer ${effectiveToken}` },
           });
           console.log("Fetched pending approvals:", pendingRes.data);

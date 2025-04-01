@@ -1,6 +1,6 @@
 import { useState, useEffect, useContext } from "react";
 import { AuthContext } from "../context/AuthContext";
-import axios from "axios";
+import apiClient from"../utils/apiClient";
 import { useNavigate } from "react-router-dom";
 import {
   Container,
@@ -78,7 +78,7 @@ const AnnualLeave = () => {
     const fetchInitialData = async () => {
       setIsLoading(true);
       try {
-        const profileRes = await axios.get("http://localhost:5000/api/profiles", {
+        const profileRes = await apiClient.get("/api/profiles", {
           headers: { Authorization: `Bearer ${effectiveToken}` },
         });
         const profile = profileRes.data;
@@ -93,7 +93,7 @@ const AnnualLeave = () => {
         setDepartmentalHeadName(profile.departmentalHeadName || "");
         setHRDirectorName(profile.HRDirectorName || "");
 
-        const balanceRes = await axios.get("http://localhost:5000/api/leave-balances", {
+        const balanceRes = await apiClient.get("/api/leave-balances", {
           headers: { Authorization: `Bearer ${effectiveToken}` },
         });
         console.log("Leave balance fetched:", balanceRes.data);
@@ -103,14 +103,14 @@ const AnnualLeave = () => {
           leaveTakenThisYear: balanceRes.data.leaveTakenThisYear || 0,
         });
 
-        const leavesRes = await axios.get("http://localhost:5000/api/leaves/my-leaves?leaveType=Annual%20Leave", {
+        const leavesRes = await apiClient.get("/api/leaves/my-leaves?leaveType=Annual%20Leave", {
           headers: { Authorization: `Bearer ${effectiveToken}` },
         });
         console.log("Leave requests fetched:", leavesRes.data);
         setLeaveRequests(Array.isArray(leavesRes.data) ? leavesRes.data : []);
 
         if (["SectionalHead", "DepartmentalHead", "HRDirector"].includes(effectiveUser.role)) {
-          const pendingRes = await axios.get("http://localhost:5000/api/leaves/pending-approvals", {
+          const pendingRes = await apiClient.get("/api/leaves/pending-approvals", {
             headers: { Authorization: `Bearer ${effectiveToken}` },
           });
           console.log("Pending approvals fetched:", pendingRes.data);

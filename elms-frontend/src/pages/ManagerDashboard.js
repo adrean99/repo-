@@ -18,7 +18,7 @@ import {
   IconButton,
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
-import axios from "axios";
+import apiClient from"../utils/apiClient";
 import { useNavigate, Link } from "react-router-dom";
 
 const socket = io("http://localhost:5000"); // Initialize WebSocket connection
@@ -38,7 +38,7 @@ const ManagerDashboard = () => {
 
     const fetchLeaveRequests = async () => {
       try {
-        const res = await axios.get("http://localhost:5000/api/leaves", {
+        const res = await apiClient.get("/api/leaves", {
           headers: { Authorization: `Bearer ${token}` },
         });
         setLeaveRequests(res.data);

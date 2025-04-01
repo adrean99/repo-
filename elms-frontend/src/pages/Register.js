@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import apiClient from"../utils/apiClient";
 import { TextField, Button, Typography, Container, Paper, Select, MenuItem } from "@mui/material";
 
 const Register = () => {

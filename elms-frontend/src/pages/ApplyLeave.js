@@ -1,6 +1,6 @@
 import { useState, useEffect, useContext } from "react";
 import { AuthContext } from "../context/AuthContext";
-import axios from "axios";
+import apiClient from"../utils/apiClient";
 import { useNavigate } from "react-router-dom"; // Import for redirecting
 import { 
   Container, TextField, Button, Typography, Paper, MenuItem, 
@@ -32,7 +32,7 @@ const ApplyLeave = () => {
     
       
       try {
-        const res = await axios.get("http://localhost:5000/api/leaves", {
+        const res = await apiClient.get("/api/leaves", {
           headers: { Authorization: `Bearer ${token}` },
         });
         console.log("Fetched leave requests:", res.data);
