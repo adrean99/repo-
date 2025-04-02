@@ -86,10 +86,8 @@ const EmployeeDashboard = () => {
 
     const fetchLeaveBalance = async () => {
       console.log("Starting fetchLeaveBalance with token:", effectiveToken);
-      const url = "http://localhost:5000/api/leave-balances/";
-      console.log("Fetching from URL:", url);
       try {
-        const res = await apiClient.get(url, {
+        const res = await apiClient.get("/api/leave-balances/", {
           headers: { Authorization: `Bearer ${effectiveToken}` },
           timeout: 10000,
         });
@@ -112,16 +110,16 @@ const EmployeeDashboard = () => {
 
     const fetchLeaveHistory = async () => {
       console.log("Starting fetchLeaveHistory with token:", effectiveToken);
-      const url = "http://localhost:5000/api/leaves/my-leaves";
+  
       try {
         // Fetch Short Leave and Annual Leave separately
         const [shortLeaveRes, annualLeaveRes] = await Promise.all([
-          apiClient.get(url, {
+          apiClient.get("/api/leaves/my-leaves", {
             headers: { Authorization: `Bearer ${effectiveToken}` },
             timeout: 10000,
             params: { leaveType: "Short Leave" },
           }),
-          apiClient.get(url, {
+          apiClient.get("/api/leaves/my-leaves", {
             headers: { Authorization: `Bearer ${effectiveToken}` },
             timeout: 10000,
             params: { leaveType: "Annual Leave" },

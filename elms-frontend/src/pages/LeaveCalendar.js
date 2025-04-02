@@ -5,6 +5,7 @@ import parse from "date-fns/parse";
 import startOfWeek from "date-fns/startOfWeek";
 import getDay from "date-fns/getDay";
 import "react-big-calendar/lib/css/react-big-calendar.css";
+import apiClient from "../utils/apiClient";
 
 const locales = { "en-US": require("date-fns/locale/en-US") };
 const localizer = dateFnsLocalizer({ format, parse, startOfWeek, getDay, locales });
@@ -14,7 +15,9 @@ const LeaveCalendar = () => {
 
   // Fetch approved leave requests
   useEffect(() => {
-    fetch("http://localhost:5000/api/leaves/approved", {
+    const fetchApprovedLeaves = async () => {
+    try{
+    const res = await apiClient.get("/api/leaves/approved", {
       headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
     })
       .then((res) => {
@@ -41,10 +44,14 @@ const LeaveCalendar = () => {
           console.error("No valid leave data found.");
         }
       })
-      .catch((error) => {
+    }catch(error) {
         console.error("Error fetching leave data:", error);
-      });
-  }, []);
+      }
+
+  };
+  fetchApprovedLeaves();
+},
+   []);
 
   return (
     <div className="p-6">

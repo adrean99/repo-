@@ -1,7 +1,7 @@
 import { useEffect, useState, useContext } from "react";
 import { AuthContext } from "../context/AuthContext";
 import { Button, TextField, Container, Typography, Paper, Table, TableHead, TableBody, TableRow, TableCell } from "@mui/material";
-
+import apiClient from "../utils/apiClient";
 const LeaveRequests = () => {
   const { user } = useContext(AuthContext);
   const [leaves, setLeaves] = useState([]);
@@ -11,37 +11,51 @@ const LeaveRequests = () => {
 
   // Fetch leave requests
   useEffect(() => {
-    fetch("http://localhost:5000/api/leaves", {
-      headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-    })
-      .then((res) => res.json())
-      .then(setLeaves);
+    const fetchLeaves = async () => {
+      const res = await apiClient.get("/api/leaves", {
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+      });
+      setLeaves(res.data);
+    };
+    fetchLeaves();
   }, []);
-
+  
   // Apply for leave
   const applyForLeave = async () => {
-    const response = await fetch("http://localhost:5000/api/leaves/apply", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("token")}` },
-      body: JSON.stringify({ startDate, endDate, reason }),
-    });
-
-    if (response.ok) {
-      alert("Leave request submitted");
-      window.location.reload();
-    } else {
-      alert("Error submitting leave request");
+    try {
+      const response = await apiClient.post(
+        "/api/leaves/apply",
+        { startDate, endDate, reason },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}` },
+        }
+      );
+      console.log("Leave applied:", response.data);
+      // Optionally refresh leaves or show success message
+    } catch (error) {
+      console.error("Error applying for leave:", error);
     }
   };
 
   // Approve/Reject leave
   const updateLeaveStatus = async (id, status) => {
-    await fetch(`http://localhost:5000/api/leaves/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("token")}` },
-      body: JSON.stringify({ status }),
-    });
-    window.location.reload();
+    try {
+      await apiClient.put(
+        `/api/leaves/${id}`,
+        { status },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
+      window.location.reload();
+    } catch (error) {
+      console.error("Error updating leave status:", error);
+    }
   };
 
   return (

@@ -17,7 +17,7 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
 
-    const socket = io("http://localhost:5000"); // Connect to WebSocket server
+    const socket = io("https://elms-backend.onrender.com"); // Connect to WebSocket server
 
     socket.on("leaveRequest", (data) => {
       setNotifications((prev) => [...prev, data.message]);
