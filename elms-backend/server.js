@@ -56,12 +56,11 @@ io.on("connection", (socket) => {
 app.set("io", io);
 
 // Connect to MongoDB
-const mongoURI = process.env.MONGO_URI || "mongodb://127.0.0.1:27017/elms";
-  mongoose 
-  .connect(mongoURI, { useNewUrlParser: true, useUnifiedTopology: true })
+mongoose
+  .connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => console.log(`✅ MongoDB Connected`))
   .catch((err) => console.error(` MongoDB Connection Error: ${err}`));
 
 // Start the server
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, "0.0.0.0", () => console.log(`Server on ${PORT}`));
+server.listen(PORT, () => console.log(` Server running on port ${PORT}`));
