@@ -21,7 +21,11 @@ import MenuIcon from "@mui/icons-material/Menu";
 import apiClient from"../utils/apiClient";
 import { useNavigate, Link } from "react-router-dom";
 
-const socket = io("https://elms-backend.onrender.com"); // Initialize WebSocket connection
+const socket = io("https://elms-backend.onrender.com",{
+  transports: ["websocket", "polling"], // Enable fallback
+  withCredentials: true, // Ensures cookies and auth headers work
+}
+); // Initialize WebSocket connection
 
 const ManagerDashboard = () => {
   const [notifications, setNotifications] = useState([]);

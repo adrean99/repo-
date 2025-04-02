@@ -17,7 +17,11 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
 
-    const socket = io("https://elms-backend.onrender.com"); // Connect to WebSocket server
+    const socket = io("https://elms-backend.onrender.com",{
+      transports: ["websocket", "polling"], // Enable fallback
+      withCredentials: true, // Ensures cookies and auth headers work
+    }
+    ); // Connect to WebSocket server
 
     socket.on("leaveRequest", (data) => {
       setNotifications((prev) => [...prev, data.message]);
