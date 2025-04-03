@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import io from "socket.io-client";
+
 import {
   Container,
   Typography,
@@ -21,11 +21,7 @@ import MenuIcon from "@mui/icons-material/Menu";
 import apiClient from"../utils/apiClient";
 import { useNavigate, Link } from "react-router-dom";
 
-const socket = io("https://elms-backend.onrender.com",{
-  transports: ["websocket", "polling"], // Enable fallback
-  withCredentials: true, // Ensures cookies and auth headers work
-}
-); // Initialize WebSocket connection
+
 
 const ManagerDashboard = () => {
   const [notifications, setNotifications] = useState([]);
@@ -58,22 +54,6 @@ const ManagerDashboard = () => {
         }
       }
     };
-
-    fetchLeaveRequests();
-
-    socket.on("leaveRequest", (data) => {
-      setNotifications((prev) => [...prev, data.message]);
-    });
-
-    socket.on("leaveUpdate", (data) => {
-      setNotifications((prev) => [...prev, data.message]);
-    });
-
-    return () => {
-      socket.off("leaveRequest");
-      socket.off("leaveUpdate");
-    };
-  }, [navigate]);
 
   // Approve or Reject Leave Request
   const handleLeaveRequestStatus = async (id, status) => {

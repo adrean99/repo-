@@ -1,5 +1,5 @@
 import { createContext, useState, useEffect } from "react";
-import { io } from "socket.io-client";
+
 
 export const AuthContext = createContext();
 
@@ -15,25 +15,7 @@ export const AuthProvider = ({ children }) => {
   
   const [notifications, setNotifications] = useState([]);
 
-  useEffect(() => {
-
-    const socket = io("https://elms-backend.onrender.com",{
-      transports: ["websocket", "polling"], // Enable fallback
-      withCredentials: true, // Ensures cookies and auth headers work
-    }
-    ); // Connect to WebSocket server
-
-    socket.on("leaveRequest", (data) => {
-      setNotifications((prev) => [...prev, data.message]);
-    });
-
-    socket.on("leaveUpdate", (data) => {
-      setNotifications((prev) => [...prev, data.message]);
-    });
-
-    return () => socket.disconnect(); // Cleanup on unmount
-  }, []);
-
+  
   const login = (newToken, userData) => {
     console.log("🔐 Logging in with token:", newToken, "User:", userData);
     setAuthState({ token: newToken, user: userData });
