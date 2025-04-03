@@ -82,7 +82,7 @@ const LeaveRequests = () => {
               <TableCell>Start Date</TableCell>
               <TableCell>End Date</TableCell>
               <TableCell>Status</TableCell>
-              {user?.role === "Manager" && <TableCell>Actions</TableCell>}
+              
             </TableRow>
           </TableHead>
           <TableBody>
@@ -92,7 +92,7 @@ const LeaveRequests = () => {
                 <TableCell>{leave.startDate.split("T")[0]}</TableCell>
                 <TableCell>{leave.endDate.split("T")[0]}</TableCell>
                 <TableCell>{leave.status}</TableCell>
-                {user?.role === "Manager" && leave.status === "Pending" && (
+                {user?.role === "Supervisor" && leave.status === "Pending" && (
                   <TableCell>
                     <Button color="success" onClick={() => updateLeaveStatus(leave._id, "Approved")}>Approve</Button>
                     <Button color="error" onClick={() => updateLeaveStatus(leave._id, "Rejected")}>Reject</Button>

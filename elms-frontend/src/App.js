@@ -5,7 +5,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import EmployeeDashboard from "./pages/EmployeeDashboard";
-import ManagerDashboard from "./pages/ManagerDashboard";
+
 //import Home from "./pages/Home";
 import NotFound from "./pages/NotFound";
 import LeaveCalendar from "./pages/LeaveCalendar";
@@ -61,9 +61,9 @@ function App() {
           <Route path="/register" element={<Register />} />
 
           {/* Private Routes */}
-          <Route path="/dashboard" element={<PrivateRoute allowedRoles={["Employee", "Manager", "SectionalHead", "DepartmentalHead", "HRDirector", "Admin"]}><Dashboard /></PrivateRoute>} />
+          <Route path="/dashboard" element={<PrivateRoute allowedRoles={["Employee", "SectionalHead", "DepartmentalHead", "HRDirector", "Admin"]}><Dashboard /></PrivateRoute>} />
           <Route path="/employee-dashboard" element={<PrivateRoute allowedRoles={["Employee"]}><EmployeeDashboard /></PrivateRoute>} />
-          <Route path="/manager-dashboard" element={<PrivateRoute allowedRoles={["Manager", "Admin"]}><ManagerDashboard /></PrivateRoute>} />
+          
           <Route path="/profile" element={<PrivateRoute allowedRoles={["Employee", "Admin", "SectionalHead", "DepartmentalHead", "HRDirector"]}><Profile /></PrivateRoute>} />
           <Route path="/admin-dashboard" element={<PrivateRoute allowedRoles={["Admin", "SectionalHead", "DepartmentalHead", "HRDirector"]}><AdminDashboard /></PrivateRoute>} />
           {/* Leave Calendar (Assumed Accessible to All) */}

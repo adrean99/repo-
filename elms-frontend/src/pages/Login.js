@@ -21,7 +21,7 @@ const Login = () => {
    
     try{
       console.log("Attempting login with", { email,password });
-      const response = await apiClient.post("/api/auth/login", {
+      const response = await apiClient.post("/auth/login", {
         email,
         password,
       

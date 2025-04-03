@@ -17,8 +17,7 @@ const Dashboard = () => {
     if (!user) {
       // If no user, redirect to login
       navigate("/login");
-    } else if (user?.role === "Manager") {
-      navigate("/manager-dashboard");
+  
     } else if (user?.role === "Employee") {
       navigate("/employee-dashboard");
     }
@@ -31,7 +30,7 @@ const Dashboard = () => {
         <Typography variant="h6" sx={{ mb: 2 }}>Role: {user?.role}</Typography>
 
         {user?.role === "Admin" && <Typography>Admin Dashboard: Manage Users & Leaves</Typography>}
-        {user?.role === "Manager" && <Typography>Manager Dashboard: Approve/Reject Leaves</Typography>}
+        
         {user?.role === "Employee" && <Typography>Employee Dashboard: Apply for Leave</Typography>}
 
         <Button component={Link} to="/leave-calendar" variant="contained" color="primary" sx={{ mt: 3, mr: 2 }}>
